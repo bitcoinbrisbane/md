@@ -4,7 +4,6 @@ import "./MarkdownEditor.css";
 
 function MarkdownEditor() {
   const [markdown, setMarkdown] = useState("");
-  const [activeTab, setActiveTab] = useState("write");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showNewChapterModal, setShowNewChapterModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -346,6 +345,12 @@ function MarkdownEditor() {
 
   const currentChapter = chapters.find((ch) => ch.id === currentChapterId);
 
+  // Calculate word count
+  const wordCount = markdown
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
+
   return (
     <div className="app-container">
       {/* Left Sidebar - Chapter Menu */}
@@ -424,17 +429,13 @@ function MarkdownEditor() {
           <div className="comment-tabs">
             <div className="tabs-left">
               <button
-                className={`tab-btn ${activeTab === "write" ? "active" : ""}`}
-                onClick={() => setActiveTab("write")}
+                className="tab-btn active"
               >
                 Write
               </button>
-              <button
-                className={`tab-btn ${activeTab === "preview" ? "active" : ""}`}
-                onClick={() => setActiveTab("preview")}
-              >
-                Preview
-              </button>
+              <div className="word-count">
+                {wordCount} {wordCount === 1 ? "word" : "words"}
+              </div>
             </div>
             <div className="tabs-right">
               <button
@@ -463,18 +464,12 @@ function MarkdownEditor() {
 
           {/* Content Area */}
           <div className="comment-content">
-            {activeTab === "write" ? (
-              <textarea
-                className="comment-textarea"
-                value={markdown}
-                onChange={handleChange}
-                placeholder="Write your book content here... (Markdown supported)"
-              />
-            ) : (
-              <div className="comment-preview">
-                <ReactMarkdown>{markdown || "*Nothing to preview*"}</ReactMarkdown>
-              </div>
-            )}
+            <textarea
+              className="comment-textarea"
+              value={markdown}
+              onChange={handleChange}
+              placeholder="Write your book content here... (Markdown supported)"
+            />
           </div>
 
           {/* Footer */}
