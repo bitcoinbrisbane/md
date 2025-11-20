@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import "./MarkdownEditor.css";
 
@@ -21,6 +21,136 @@ function MarkdownEditor() {
   const [repoOwner, setRepoOwner] = useState("");
   const [repoName, setRepoName] = useState("");
   const [filePath, setFilePath] = useState("book.md");
+  const [loadingChapters, setLoadingChapters] = useState(false);
+
+  // Sync chapters from GitHub repository
+  const syncChaptersFromGitHub = useCallback(async (token, owner, repo) => {
+    if (!token || !owner || !repo) {
+      return;
+    }
+
+    setLoadingChapters(true);
+    try {
+      // Get repository contents at root level
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.log("Failed to fetch repository contents");
+        return;
+      }
+
+      const contents = await response.json();
+
+      // Filter for chapter folders (chap_01, chap_02, etc.)
+      const chapterFolders = contents.filter(
+        (item) =>
+          item.type === "dir" && /^chap_\d{2}$/.test(item.name)
+      );
+
+      if (chapterFolders.length === 0) {
+        console.log("No chapter folders found in repository");
+        return;
+      }
+
+      // Fetch each chapter's markdown file
+      const chapterPromises = chapterFolders.map(async (folder) => {
+        try {
+          // Get folder contents
+          const folderResponse = await fetch(folder.url, {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: "application/vnd.github.v3+json",
+            },
+          });
+
+          if (!folderResponse.ok) return null;
+
+          const folderContents = await folderResponse.json();
+
+          // Find the markdown file
+          const mdFile = folderContents.find((file) =>
+            file.name.endsWith(".md")
+          );
+
+          if (!mdFile) return null;
+
+          // Fetch the file content
+          const fileResponse = await fetch(mdFile.url, {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: "application/vnd.github.v3+json",
+            },
+          });
+
+          if (!fileResponse.ok) return null;
+
+          const fileData = await fileResponse.json();
+          const content = atob(fileData.content); // Decode base64
+
+          // Extract chapter number from folder name (chap_01 -> 1)
+          const chapterNumber = parseInt(folder.name.split("_")[1], 10);
+
+          // Extract chapter name from first heading or filename
+          const nameMatch = content.match(/^#\s+(.+)$/m);
+          const chapterName = nameMatch
+            ? nameMatch[1]
+            : mdFile.name.replace(".md", "").replace(/-/g, " ");
+
+          // Extract description from content (second line if it exists)
+          const lines = content.split("\n").filter((line) => line.trim());
+          const description = lines.length > 1 && !lines[1].startsWith("#")
+            ? lines[1]
+            : "";
+
+          return {
+            id: `github-${folder.name}-${mdFile.name}`,
+            number: chapterNumber,
+            name: chapterName,
+            description: description,
+            folderName: folder.name,
+            fileName: mdFile.name.replace(".md", ""),
+            filePath: `${folder.name}/${mdFile.name}`,
+            content: content,
+          };
+        } catch (error) {
+          console.error(`Error fetching chapter ${folder.name}:`, error);
+          return null;
+        }
+      });
+
+      const fetchedChapters = (await Promise.all(chapterPromises))
+        .filter((ch) => ch !== null)
+        .sort((a, b) => a.number - b.number);
+
+      if (fetchedChapters.length > 0) {
+        // Update chapters state and localStorage
+        setChapters(fetchedChapters);
+        localStorage.setItem("chapters", JSON.stringify(fetchedChapters));
+
+        // Select first chapter if none is currently selected
+        if (!currentChapterId && fetchedChapters.length > 0) {
+          setCurrentChapterId(fetchedChapters[0].id);
+          setMarkdown(fetchedChapters[0].content || "");
+          setFilePath(fetchedChapters[0].filePath);
+          localStorage.setItem("current_chapter_id", fetchedChapters[0].id);
+        }
+
+        console.log(`Loaded ${fetchedChapters.length} chapters from GitHub`);
+      }
+    } catch (error) {
+      console.error("Error syncing chapters from GitHub:", error);
+    } finally {
+      setLoadingChapters(false);
+    }
+  }, [currentChapterId]);
 
   // Load settings and chapters from localStorage on mount
   useEffect(() => {
@@ -36,6 +166,7 @@ function MarkdownEditor() {
     if (savedRepo) setRepoName(savedRepo);
     if (savedPath) setFilePath(savedPath);
 
+    // First load from localStorage
     if (savedChapters) {
       const parsedChapters = JSON.parse(savedChapters);
       setChapters(parsedChapters);
@@ -56,7 +187,12 @@ function MarkdownEditor() {
         setFilePath(parsedChapters[0].filePath);
       }
     }
-  }, []);
+
+    // Then sync from GitHub if credentials are available
+    if (savedToken && savedOwner && savedRepo) {
+      syncChaptersFromGitHub(savedToken, savedOwner, savedRepo);
+    }
+  }, [syncChaptersFromGitHub]);
 
   const handleChange = (e) => {
     setMarkdown(e.target.value);
@@ -213,7 +349,12 @@ function MarkdownEditor() {
           </button>
         </div>
         <div className="chapter-list">
-          {chapters.length === 0 ? (
+          {loadingChapters && (
+            <div className="loading-chapters">
+              <p>Loading chapters from GitHub...</p>
+            </div>
+          )}
+          {!loadingChapters && chapters.length === 0 ? (
             <div className="no-chapters">
               <p>No chapters yet</p>
               <small>Click &quot;+ New&quot; to create your first chapter</small>
