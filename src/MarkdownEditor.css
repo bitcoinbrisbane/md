@@ -31,6 +31,33 @@
   color: #24292f;
 }
 
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sync-btn {
+  background-color: transparent;
+  color: #57606a;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #24292f;
+}
+
+.sync-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .new-chapter-btn {
   background-color: #2da44e;
   color: white;

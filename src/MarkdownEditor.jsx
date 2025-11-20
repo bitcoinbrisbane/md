@@ -20,20 +20,21 @@ function MarkdownEditor() {
   const [githubToken, setGithubToken] = useState("");
   const [repoOwner, setRepoOwner] = useState("");
   const [repoName, setRepoName] = useState("");
+  const [repoBranch, setRepoBranch] = useState("master");
   const [filePath, setFilePath] = useState("book.md");
   const [loadingChapters, setLoadingChapters] = useState(false);
 
   // Sync chapters from GitHub repository
-  const syncChaptersFromGitHub = useCallback(async (token, owner, repo) => {
+  const syncChaptersFromGitHub = useCallback(async (token, owner, repo, branch = "master") => {
     if (!token || !owner || !repo) {
       return;
     }
 
     setLoadingChapters(true);
     try {
-      // Get repository contents at root level
+      // Get repository contents at root level with specific branch
       const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/`,
+        `https://api.github.com/repos/${owner}/${repo}/contents/?ref=${branch}`,
         {
           headers: {
             Authorization: `token ${token}`,
@@ -43,7 +44,9 @@ function MarkdownEditor() {
       );
 
       if (!response.ok) {
-        console.log("Failed to fetch repository contents");
+        console.error("Failed to fetch repository contents:", response.status, response.statusText);
+        setSaveMessage(`✗ Error loading chapters: ${response.status} ${response.statusText}`);
+        setTimeout(() => setSaveMessage(""), 5000);
         return;
       }
 
@@ -157,6 +160,7 @@ function MarkdownEditor() {
     const savedToken = localStorage.getItem("github_token");
     const savedOwner = localStorage.getItem("repo_owner");
     const savedRepo = localStorage.getItem("repo_name");
+    const savedBranch = localStorage.getItem("repo_branch");
     const savedPath = localStorage.getItem("file_path");
     const savedChapters = localStorage.getItem("chapters");
     const savedCurrentChapter = localStorage.getItem("current_chapter_id");
@@ -164,6 +168,7 @@ function MarkdownEditor() {
     if (savedToken) setGithubToken(savedToken);
     if (savedOwner) setRepoOwner(savedOwner);
     if (savedRepo) setRepoName(savedRepo);
+    if (savedBranch) setRepoBranch(savedBranch);
     if (savedPath) setFilePath(savedPath);
 
     // First load from localStorage
@@ -190,7 +195,7 @@ function MarkdownEditor() {
 
     // Then sync from GitHub if credentials are available
     if (savedToken && savedOwner && savedRepo) {
-      syncChaptersFromGitHub(savedToken, savedOwner, savedRepo);
+      syncChaptersFromGitHub(savedToken, savedOwner, savedRepo, savedBranch || "master");
     }
   }, [syncChaptersFromGitHub]);
 
@@ -261,9 +266,16 @@ function MarkdownEditor() {
     localStorage.setItem("github_token", githubToken);
     localStorage.setItem("repo_owner", repoOwner);
     localStorage.setItem("repo_name", repoName);
+    localStorage.setItem("repo_branch", repoBranch);
     localStorage.setItem("file_path", filePath);
     setShowSettingsModal(false);
-    setSaveMessage("Settings saved!");
+    setSaveMessage("Settings saved! Syncing chapters...");
+
+    // Trigger chapter sync after saving settings
+    if (githubToken && repoOwner && repoName) {
+      syncChaptersFromGitHub(githubToken, repoOwner, repoName, repoBranch);
+    }
+
     setTimeout(() => setSaveMessage(""), 3000);
   };
 
@@ -340,13 +352,23 @@ function MarkdownEditor() {
       <div className="chapter-sidebar">
         <div className="sidebar-header">
           <h3>Chapters</h3>
-          <button
-            className="new-chapter-btn"
-            onClick={() => setShowNewChapterModal(true)}
-            title="Add New Chapter"
-          >
-            + New
-          </button>
+          <div className="sidebar-actions">
+            <button
+              className="sync-btn"
+              onClick={() => syncChaptersFromGitHub(githubToken, repoOwner, repoName, repoBranch)}
+              disabled={loadingChapters || !githubToken || !repoOwner || !repoName}
+              title="Sync chapters from GitHub"
+            >
+              🔄
+            </button>
+            <button
+              className="new-chapter-btn"
+              onClick={() => setShowNewChapterModal(true)}
+              title="Add New Chapter"
+            >
+              + New
+            </button>
+          </div>
         </div>
         <div className="chapter-list">
           {loadingChapters && (
@@ -519,6 +541,21 @@ function MarkdownEditor() {
                 onChange={(e) => setRepoName(e.target.value)}
                 placeholder="my-book-repo"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="repoBranch">Branch</label>
+              <input
+                type="text"
+                id="repoBranch"
+                className="form-control"
+                value={repoBranch}
+                onChange={(e) => setRepoBranch(e.target.value)}
+                placeholder="master or main"
+              />
+              <small className="form-text">
+                The branch where your chapters are stored
+              </small>
             </div>
 
             <div className="form-group">
