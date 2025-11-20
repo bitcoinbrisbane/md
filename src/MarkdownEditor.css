@@ -11,7 +11,7 @@
   min-height: 100%;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: Georgia, "Times New Roman", Times, serif;
   line-height: 1.8;
 }
 
@@ -55,7 +55,7 @@
   background-color: #f8f9fa;
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   font-size: 0.9em;
 }
 
@@ -71,7 +71,8 @@
   padding: 0;
 }
 
-.preview-content ul, .preview-content ol {
+.preview-content ul,
+.preview-content ol {
   margin-bottom: 1.25rem;
   padding-left: 2rem;
 }

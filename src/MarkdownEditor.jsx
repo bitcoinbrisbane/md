@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import './MarkdownEditor.css'
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import "./MarkdownEditor.css";
 
 function MarkdownEditor() {
   const [markdown, setMarkdown] = useState(`# Welcome to Your Book Writer
@@ -25,11 +25,11 @@ Write your story using **markdown** formatting:
 Code blocks are supported too!
 \`\`\`
 
-Happy writing!`)
+Happy writing!`);
 
   const handleChange = (e) => {
-    setMarkdown(e.target.value)
-  }
+    setMarkdown(e.target.value);
+  };
 
   return (
     <div className="container-fluid vh-100 d-flex flex-column p-0">
@@ -48,15 +48,15 @@ Happy writing!`)
           onChange={handleChange}
           placeholder="Start writing your book here..."
           style={{
-            resize: 'none',
-            height: '250px',
-            fontFamily: 'monospace',
-            fontSize: '14px'
+            resize: "none",
+            height: "250px",
+            fontFamily: "monospace",
+            fontSize: "14px",
           }}
         />
       </div>
     </div>
-  )
+  );
 }
 
-export default MarkdownEditor
+export default MarkdownEditor;

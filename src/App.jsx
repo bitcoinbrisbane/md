@@ -1,10 +1,8 @@
-import MarkdownEditor from './MarkdownEditor'
-import './App.css'
+import MarkdownEditor from "./MarkdownEditor";
+import "./App.css";
 
 function App() {
-  return (
-    <MarkdownEditor />
-  )
+  return <MarkdownEditor />;
 }
 
-export default App
+export default App;
