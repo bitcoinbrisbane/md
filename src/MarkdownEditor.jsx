@@ -3,34 +3,18 @@ import ReactMarkdown from "react-markdown";
 import "./MarkdownEditor.css";
 
 function MarkdownEditor() {
-  const [markdown, setMarkdown] = useState(`# Welcome to Your Book Writer
-
-Start typing your book here...
-
-## Chapter 1
-
-Write your story using **markdown** formatting:
-- *Italic text*
-- **Bold text**
-- ***Bold and italic***
-
-### Lists
-1. First item
-2. Second item
-3. Third item
-
-> This is a quote
-
-\`\`\`
-Code blocks are supported too!
-\`\`\`
-
-Happy writing!`);
-
+  const [markdown, setMarkdown] = useState("");
   const [activeTab, setActiveTab] = useState("write");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showNewChapterModal, setShowNewChapterModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+
+  // Chapter management
+  const [chapters, setChapters] = useState([]);
+  const [currentChapterId, setCurrentChapterId] = useState(null);
+  const [newChapterName, setNewChapterName] = useState("");
+  const [newChapterDescription, setNewChapterDescription] = useState("");
 
   // GitHub settings
   const [githubToken, setGithubToken] = useState("");
@@ -38,21 +22,103 @@ Happy writing!`);
   const [repoName, setRepoName] = useState("");
   const [filePath, setFilePath] = useState("book.md");
 
-  // Load settings from localStorage on mount
+  // Load settings and chapters from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem("github_token");
     const savedOwner = localStorage.getItem("repo_owner");
     const savedRepo = localStorage.getItem("repo_name");
     const savedPath = localStorage.getItem("file_path");
+    const savedChapters = localStorage.getItem("chapters");
+    const savedCurrentChapter = localStorage.getItem("current_chapter_id");
 
     if (savedToken) setGithubToken(savedToken);
     if (savedOwner) setRepoOwner(savedOwner);
     if (savedRepo) setRepoName(savedRepo);
     if (savedPath) setFilePath(savedPath);
+
+    if (savedChapters) {
+      const parsedChapters = JSON.parse(savedChapters);
+      setChapters(parsedChapters);
+
+      if (savedCurrentChapter) {
+        const currentChapter = parsedChapters.find(
+          (ch) => ch.id === savedCurrentChapter
+        );
+        if (currentChapter) {
+          setCurrentChapterId(savedCurrentChapter);
+          setMarkdown(currentChapter.content || "");
+          setFilePath(currentChapter.filePath);
+        }
+      } else if (parsedChapters.length > 0) {
+        // Select first chapter if no saved current chapter
+        setCurrentChapterId(parsedChapters[0].id);
+        setMarkdown(parsedChapters[0].content || "");
+        setFilePath(parsedChapters[0].filePath);
+      }
+    }
   }, []);
 
   const handleChange = (e) => {
     setMarkdown(e.target.value);
+    // Update current chapter content
+    if (currentChapterId) {
+      const updatedChapters = chapters.map((ch) =>
+        ch.id === currentChapterId ? { ...ch, content: e.target.value } : ch
+      );
+      setChapters(updatedChapters);
+      localStorage.setItem("chapters", JSON.stringify(updatedChapters));
+    }
+  };
+
+  const createChapter = () => {
+    if (!newChapterName.trim()) {
+      alert("Please enter a chapter name");
+      return;
+    }
+
+    const chapterNumber = chapters.length + 1;
+    const folderName = `chap_${String(chapterNumber).padStart(2, "0")}`;
+    const fileName = newChapterName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const newFilePath = `${folderName}/${fileName}.md`;
+
+    const newChapter = {
+      id: Date.now().toString(),
+      number: chapterNumber,
+      name: newChapterName,
+      description: newChapterDescription,
+      folderName: folderName,
+      fileName: fileName,
+      filePath: newFilePath,
+      content: `# ${newChapterName}\n\n${newChapterDescription ? newChapterDescription + "\n\n" : ""}Start writing your chapter here...`,
+    };
+
+    const updatedChapters = [...chapters, newChapter];
+    setChapters(updatedChapters);
+    localStorage.setItem("chapters", JSON.stringify(updatedChapters));
+
+    // Switch to the new chapter
+    setCurrentChapterId(newChapter.id);
+    setMarkdown(newChapter.content);
+    setFilePath(newChapter.filePath);
+    localStorage.setItem("current_chapter_id", newChapter.id);
+
+    // Close modal and reset form
+    setShowNewChapterModal(false);
+    setNewChapterName("");
+    setNewChapterDescription("");
+  };
+
+  const selectChapter = (chapterId) => {
+    const chapter = chapters.find((ch) => ch.id === chapterId);
+    if (chapter) {
+      setCurrentChapterId(chapterId);
+      setMarkdown(chapter.content || "");
+      setFilePath(chapter.filePath);
+      localStorage.setItem("current_chapter_id", chapterId);
+    }
   };
 
   const saveSettings = () => {
@@ -130,17 +196,66 @@ Happy writing!`);
     }
   };
 
+  const currentChapter = chapters.find((ch) => ch.id === currentChapterId);
+
   return (
-    <div className="container-fluid vh-100 d-flex flex-column p-0">
-      {/* Preview Panel - Top */}
-      <div className="preview-panel flex-grow-1 overflow-auto bg-white p-4">
-        <div className="preview-content">
-          <ReactMarkdown>{markdown}</ReactMarkdown>
+    <div className="app-container">
+      {/* Left Sidebar - Chapter Menu */}
+      <div className="chapter-sidebar">
+        <div className="sidebar-header">
+          <h3>Chapters</h3>
+          <button
+            className="new-chapter-btn"
+            onClick={() => setShowNewChapterModal(true)}
+            title="Add New Chapter"
+          >
+            + New
+          </button>
+        </div>
+        <div className="chapter-list">
+          {chapters.length === 0 ? (
+            <div className="no-chapters">
+              <p>No chapters yet</p>
+              <small>Click &quot;+ New&quot; to create your first chapter</small>
+            </div>
+          ) : (
+            chapters.map((chapter) => (
+              <div
+                key={chapter.id}
+                className={`chapter-item ${currentChapterId === chapter.id ? "active" : ""}`}
+                onClick={() => selectChapter(chapter.id)}
+              >
+                <div className="chapter-number">Ch. {chapter.number}</div>
+                <div className="chapter-info">
+                  <div className="chapter-name">{chapter.name}</div>
+                  {chapter.description && (
+                    <div className="chapter-description">{chapter.description}</div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Editor Panel - Bottom - GitHub style */}
-      <div className="editor-panel bg-light p-3">
+      {/* Main Content Area */}
+      <div className="main-content">
+        {/* Preview Panel - Top */}
+        <div className="preview-panel flex-grow-1 overflow-auto bg-white p-4">
+          <div className="preview-content">
+            {currentChapter ? (
+              <ReactMarkdown>{markdown}</ReactMarkdown>
+            ) : (
+              <div className="no-chapter-selected">
+                <h2>Welcome to Your Book Writer</h2>
+                <p>Create a new chapter to get started!</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Editor Panel - Bottom - GitHub style */}
+        <div className="editor-panel bg-light p-3">
         <div className="github-comment-box">
           {/* Tabs and Save Button */}
           <div className="comment-tabs">
@@ -206,6 +321,7 @@ Happy writing!`);
             </small>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Settings Modal */}
@@ -285,6 +401,73 @@ Happy writing!`);
               </button>
               <button className="btn btn-primary" onClick={saveSettings}>
                 Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Chapter Modal */}
+      {showNewChapterModal && (
+        <div className="modal-overlay" onClick={() => setShowNewChapterModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Create New Chapter</h3>
+            <p className="modal-description">
+              Add a new chapter to your book.
+            </p>
+
+            <div className="form-group">
+              <label htmlFor="chapterName">Chapter Name *</label>
+              <input
+                type="text"
+                id="chapterName"
+                className="form-control"
+                value={newChapterName}
+                onChange={(e) => setNewChapterName(e.target.value)}
+                placeholder="e.g., The Beginning"
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="chapterDescription">Description (optional)</label>
+              <textarea
+                id="chapterDescription"
+                className="form-control"
+                value={newChapterDescription}
+                onChange={(e) => setNewChapterDescription(e.target.value)}
+                placeholder="Brief description of what happens in this chapter..."
+                rows="3"
+              />
+            </div>
+
+            <div className="chapter-path-preview">
+              <small>
+                <strong>File path:</strong>{" "}
+                {`chap_${String(chapters.length + 1).padStart(2, "0")}/${
+                  newChapterName
+                    ? newChapterName
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-+|-+$/g, "") || "untitled"
+                    : "untitled"
+                }.md`}
+              </small>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowNewChapterModal(false);
+                  setNewChapterName("");
+                  setNewChapterDescription("");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={createChapter}>
+                Create Chapter
               </button>
             </div>
           </div>
