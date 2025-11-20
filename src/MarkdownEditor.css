@@ -95,10 +95,23 @@
 
 .comment-tabs {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   background-color: #f6f8fa;
   border-bottom: 1px solid #d0d7de;
   padding: 8px 8px 0 8px;
+}
+
+.tabs-left {
+  display: flex;
   gap: 4px;
+}
+
+.tabs-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 8px;
 }
 
 .tab-btn {
@@ -260,4 +273,186 @@
 .comment-footer small {
   font-size: 12px;
   color: #57606a;
+}
+
+/* Save and Settings Buttons */
+.save-btn {
+  background-color: #2da44e;
+  color: white;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.save-btn:hover:not(:disabled) {
+  background-color: #2c974b;
+}
+
+.save-btn:disabled {
+  background-color: #94d3a2;
+  cursor: not-allowed;
+}
+
+.settings-btn {
+  background: transparent;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #d0d7de;
+}
+
+/* Save Message */
+.save-message {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 1px solid #d0d7de;
+}
+
+.save-message.success {
+  background-color: #dafbe1;
+  color: #1a7f37;
+}
+
+.save-message.error {
+  background-color: #ffebe9;
+  color: #cf222e;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #24292f;
+}
+
+.modal-description {
+  margin: 0 0 20px 0;
+  color: #57606a;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #24292f;
+}
+
+.form-group .form-control {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.form-group .form-control:focus {
+  outline: none;
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+.form-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #57606a;
+}
+
+.form-text a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.form-text a:hover {
+  text-decoration: underline;
+}
+
+.form-text code {
+  background-color: rgba(175, 184, 193, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2da44e;
+  color: white;
+  border-color: rgba(27, 31, 36, 0.15);
+}
+
+.btn-primary:hover {
+  background-color: #2c974b;
+}
+
+.btn-secondary {
+  background-color: #f6f8fa;
+  color: #24292f;
+  border-color: #d0d7de;
+}
+
+.btn-secondary:hover {
+  background-color: #f3f4f6;
+  border-color: #d0d7de;
 }
